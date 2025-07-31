@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+{% block header %}
+<h2>Products</h2>
+{% endblock %}
+{% block header_buttons %}
+<a href="{% url 'home:add_product' %}" class="btn btn-primary mb-3">Add Product</a>
+{% endblock %}
+<div class="alert alert-info">
+    Total Products: {{ products|length }}
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Product ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Date Added</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for Stock in products %}
+        <tr>
+            <td>{{ Stock.id }}</td>
+            <td>{{ Stock.product_name }}</td>
+            <td>{{ Stock.product_description }}</td>
+            <td>${{ Stock.unit_price }}</td>
+            <td>{{ Stock.quantity }}</td>
+            <td>{{ Stock.date|date:"Y-m-d" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No products found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+{%endblock%}

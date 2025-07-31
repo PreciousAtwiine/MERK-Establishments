@@ -1,0 +1,49 @@
+/* Main container styling */
+.container {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+/* Card styling */
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+}
+
+/* Form elements */
+.form-control {
+    border-radius: 5px;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s;
+}
+
+/* Button styling */
+.btn-primary {
+    background-color: #4e73df;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .d-none.d-md-block {
+        display: none !important;
+    }
+    
+    .col-md-6 {
+        width: 100%;
+    }
+}
