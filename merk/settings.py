@@ -51,7 +51,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LOGIN_REDIRECT_URL = 'home:view_sales'
-LOGOUT_REDIRECT_URL = 'home:login'
+# Show a logout confirmation page instead of redirecting
+LOGOUT_REDIRECT_URL = None
 
 
 MIDDLEWARE = [
