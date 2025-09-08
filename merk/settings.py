@@ -50,8 +50,8 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default backend
 ]
 
-LOGIN_REDIRECT_URL = 'view_sales'
-LOGOUT_REDIRECT_URL = 'login'
+LOGIN_REDIRECT_URL = 'home:view_sales'
+LOGOUT_REDIRECT_URL = 'home:login'
 
 
 MIDDLEWARE = [

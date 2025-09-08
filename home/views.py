@@ -16,7 +16,7 @@ class Login(LoginView):
     
     def get_success_url(self):
         #redirect to the view_sales page after successful login
-        return reverse_lazy('home:/sales')
+        return reverse_lazy('/sales/')
         #return '/view/'
     
     def dispatch(self,request, *args, **kwargs):
@@ -73,6 +73,7 @@ def view_sales(request):
     }
     return render(request, 'view_sales.html', context)
 
+@login_required
 def products(request):
     products = Stock.objects.all()
     context = {

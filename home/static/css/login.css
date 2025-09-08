@@ -1,49 +1,105 @@
-/* Main container styling */
-.container {
-    height: 100vh;
-    display: flex;
+/* Modern login page styles */
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body.login-page {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    background: #f0ffff; /* azure */
+    color: #0f172a;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.login-page {
+        background: #f0ffff; /* keep calm, visible background in dark mode */
+        color: #0f172a;
+    }
+}
+
+.auth-wrapper {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 48px;
     align-items: center;
+    padding: 32px;
 }
 
-/* Card styling */
-.card {
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    background-color: rgba(255, 255, 255, 0.95);
+@media (max-width: 991.98px) {
+    .auth-wrapper { grid-template-columns: 1fr; padding: 24px; }
 }
 
-.card-header {
-    background: transparent;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
+.auth-illustration { padding: 24px; }
+
+.brand-logo {
+    display: block;
+    width: 100%;
+    max-width: 440px; /* match .auth-card-container */
+    height: auto;
+    filter: drop-shadow(0 10px 25px rgba(0,0,0,.15));
 }
 
-/* Form elements */
+.brand-logo-sm { height: 48px; width: auto; }
+
+.auth-card-container { max-width: 440px; width: 100%; margin: 0 auto; }
+
+.auth-card {
+    border: 1px solid rgba(2,6,23,0.12);
+    border-radius: 16px;
+    background: #f0ffff; /* azure container */
+    backdrop-filter: none;
+    box-shadow: 0 10px 24px rgba(2,6,23,0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+    .auth-card {
+        background: #f0ffff; /* keep azure in dark mode for visibility */
+        border-color: rgba(2,6,23,0.2);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+    }
+}
+
+/* Remove left logo box from the interim change */
+.logo-card { all: unset; }
+
+/* Improve form controls */
 .form-control {
-    border-radius: 5px;
-    padding: 12px 15px;
-    border: 1px solid #ced4da;
-    transition: all 0.3s;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(2,6,23,0.12);
+    background: rgba(255,255,255,.9);
+    transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
 
-/* Button styling */
+.form-control:focus {
+    border-color: rgba(13,110,253,.6);
+    box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
+    background: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+    .form-control { background: rgba(15,23,42,.6); border-color: rgba(148,163,184,.18); color: #e2e8f0; }
+    .form-control::placeholder { color: #94a3b8; }
+}
+
+/* Buttons */
 .btn-primary {
-    background-color: #4e73df;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 20px;
+    --bs-btn-bg: #0d6efd;
+    --bs-btn-border-color: #0d6efd;
+    --bs-btn-hover-bg: #0b5ed7;
+    --bs-btn-hover-border-color: #0a58ca;
+    --bs-btn-focus-shadow-rgb: 13,110,253;
+    border-radius: 10px;
+    padding: 10px 16px;
     font-weight: 600;
-    transition: all 0.3s;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .d-none.d-md-block {
-        display: none !important;
-    }
-    
-    .col-md-6 {
-        width: 100%;
-    }
+/* Small links */
+.auth-card a { color: #0d6efd; }
+.auth-card a:hover { text-decoration: underline; }
+
+/* Reduce default card shadow intensity on dark */
+@media (prefers-color-scheme: dark) {
+    .card.shadow-lg { box-shadow: 0 10px 40px rgba(0,0,0,.45) !important; }
 }
