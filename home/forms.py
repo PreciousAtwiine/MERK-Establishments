@@ -1,66 +1,85 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.models import User
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
-from django.contrib.auth.models import User
-#Accessing ModelForm from django
-from django.forms import ModelForm
-#accessing our models to create corresponding forms
-#Importing all forms
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
 from .models import *
+from .models import Sale, Stock
 
 class SaleForm(forms.ModelForm):
     class Meta:
         model = Sale
-        fields = ['product_name', 'unit_price', 'quantity', 'sales_agent', 'customer_name', 'organization', 'customer_phonenumber', 'payment_method']
-        def __int__(self, *args,**kwargs):
-            super().__init__(*args,**kwargs)
-            # only show products that have stock available
-            self.fields['product_name'].queryset = Stock.objects.filter(quantity__gt=0)
-            def clean_quantity(self):
-                quantity = self.cleaned_data['quantity']
-                product = self.cleaned_data.get('product')
-        
-                if product and quantity > product.stock_quantity:
-                    raise forms.ValidationError(
-                        f"Only {product.stock_quantity} items available in stock."
-            )
-                return quantity
-            
+        fields = ['product_name','unit_price','quantity','sales_agent','customer_name','organization','customer_phonenumber','payment_method']
+        widgets = {
+            'product_name': forms.Select(attrs={'class': 'form-select'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'form-control'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'sales_agent': forms.TextInput(attrs={'class': 'form-control'}),
+            'customer_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'organization': forms.TextInput(attrs={'class': 'form-control'}),
+            'customer_phonenumber': forms.TextInput(attrs={'class': 'form-control'}),
+            'payment_method': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def clean_quantity(self):
+        quantity = self.cleaned_data.get('quantity')
+        if quantity is not None and quantity < 0:
+            raise forms.ValidationError("Quantity cannot be negative")
+        return quantity
+
 class LoginForm(AuthenticationForm):  
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)   
-        self.helper = FormHelper()
-        self.helper.form_method = 'post'
-        self.helper.add_input(Submit('submit', 'Login', css_class='btn btn-primary'))
-        
-        remember_me = forms.BooleanField(required=False, label = "Remember me")       
-                
-                
+    username = forms.CharField(widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'Username'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'Password'}))
+    remember_me = forms.BooleanField(required=False, label = "Remember me")       
+
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Stock
-        fields = ['product_name', 'product_description', 'unit_cost', 'unit_price', 'quantity', 'product_supplier']
+        fields = ['product_name','product_description','unit_cost','unit_price','quantity','product_supplier']
         widgets = {
-            'product_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'product_description': forms.Textarea(attrs={'class': 'form-control'}),
-            'unit_cost': forms.NumberInput(attrs={'class': 'form-control'}),
-            'unit_price': forms.NumberInput(attrs={'class': 'form-control'}),
-            'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'product_supplier': forms.TextInput(attrs={'class': 'form-control'}),
+            'product_name': forms.TextInput(attrs={'class':'form-control'}),
+            'product_description': forms.Textarea(attrs={'class':'form-control','rows':3}),
+            'unit_cost': forms.NumberInput(attrs={'class':'form-control'}),
+            'unit_price': forms.NumberInput(attrs={'class':'form-control'}),
+            'quantity': forms.NumberInput(attrs={'class':'form-control'}),
+            'product_supplier': forms.TextInput(attrs={'class':'form-control'}),
         }
-        
+
 class SignUpForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-    first_name = forms.CharField(max_length=30)
-    last_name = forms.CharField(max_length=30)
-    
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
-        
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.helper = FormHelper()
-            self.helper.form_method = 'post'
-            self.helper.add_input(Submit('submit', 'Sign Up', css_class='btn btn-primary btn-block'))
+        fields = ('username', 'email', 'password1', 'password2')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.add_input(Submit('submit', 'Sign Up', css_class='btn btn-primary btn-block'))
+
+class RequestLoginCodeForm(forms.Form):
+    email = forms.EmailField()
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if not User.objects.filter(email__iexact=email).exists():
+            raise ValidationError("No account found with that email.")
+        return email
+
+class VerifyLoginCodeForm(forms.Form):
+    email = forms.EmailField()
+    code = forms.CharField(max_length=10)
+
+class SetNewPasswordForm(forms.Form):
+    password1 = forms.CharField(label='New password', widget=forms.PasswordInput(attrs={'class':'form-control'}))
+    password2 = forms.CharField(label='Confirm password', widget=forms.PasswordInput(attrs={'class':'form-control'}))
+
+    def clean(self):
+        cleaned = super().clean()
+        pwd1 = cleaned.get('password1')
+        pwd2 = cleaned.get('password2')
+        if pwd1 and pwd2 and pwd1 != pwd2:
+            raise ValidationError("Passwords do not match.")
+        if pwd1:
+            validate_password(pwd1)
+        return cleaned

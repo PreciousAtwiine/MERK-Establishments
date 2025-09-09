@@ -53,6 +53,7 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_REDIRECT_URL = 'home:view_sales'
 # Show a logout confirmation page instead of redirecting
 LOGOUT_REDIRECT_URL = None
+LOGIN_URL = 'home:login'
 
 
 MIDDLEWARE = [
@@ -131,6 +132,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Email (console backend for dev)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'no-reply@merk.local'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

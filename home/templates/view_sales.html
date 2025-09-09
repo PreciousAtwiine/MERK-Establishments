@@ -12,11 +12,13 @@
     @media (prefers-color-scheme: dark) {
         /* Keep stat chips lilac and text black in dark mode */
         .stat-chip { background: #f3e8ff; border-color: rgba(124,58,237,.35); }
-        .stat-chip .label { color: #000000; }
+        .stat-chip .label { color: #0c0c0c; }
+        /* For text */
         .stat-chip .value { color: #000000; }
-        .table thead th { background: #0b1220; }
+        /* For table header */
+        .table thead th { background: #f0cfe8; }
         /* Keep the Add Sale area light even in dark mode */
-        .empty-state { background: #ffffff; border-color: rgba(2,6,23,.15); color: #0f172a; }
+        .empty-state { background: #ffffff; border-color: rgba(225, 228, 238, 0.772); color: #000000d0; }
     }
 </style>
 {% endblock %}
@@ -57,6 +59,7 @@
                         <th class="text-end">Quantity</th>
                         <th class="text-end">Unit Price</th>
                         <th class="text-nowrap">Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -67,6 +70,13 @@
                         <td class="text-end">{{ sale.quantity }}</td>
                         <td class="text-end">${{ sale.unit_price }}</td>
                         <td>{{ sale.date|date:"Y-m-d" }}</td>
+                        <td class="text-nowrap">
+                            <a href="{% url 'home:edit_sale' sale.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <form method="post" action="{% url 'home:delete_sale' sale.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this sale?');">Delete</button>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

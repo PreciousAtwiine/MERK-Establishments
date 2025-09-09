@@ -18,6 +18,7 @@
             <th>Price</th>
             <th>Quantity</th>
             <th>Date Added</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -29,6 +30,13 @@
             <td>${{ Stock.unit_price }}</td>
             <td>{{ Stock.quantity }}</td>
             <td>{{ Stock.date|date:"Y-m-d" }}</td>
+            <td class="text-nowrap">
+                <a href="{% url 'home:edit_product' Stock.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <form method="post" action="{% url 'home:delete_product' Stock.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this product?');">Delete</button>
+                </form>
+            </td>
         </tr>
         {% empty %}
         <tr>

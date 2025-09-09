@@ -1,6 +1,21 @@
 from django.db import models
+from django.utils import timezone
 
-# Create your models here.
+#Reset password
+class PasswordResetCode(models.Model):
+    email = models.EmailField(db_index=True)
+    code = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    def is_valid(self) -> bool:
+        return (not self.used) and timezone.now() < self.expires_at
+
+    def __str__(self) -> str:
+        return f"ResetCode(email={self.email}, used={self.used})"
+
+
 class Stock(models.Model):
     product_name = models.CharField(max_length=100)
     product_description = models.TextField(null=False,blank=False)
