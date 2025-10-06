@@ -20,4 +20,7 @@ urlpatterns = [
     path('auth/request-code/', views.request_login_code, name='request_code'),
     path('auth/verify-code/', views.verify_login_code, name='verify_code'),
     path('auth/set-password/', views.set_new_password, name='set_new_password'),
+    path('users/', views.users_list, name='users_list'),
+    path('users/<int:pk>/edit/', views.edit_user, name='edit_user'),
+    path('users/<int:pk>/delete/', views.delete_user, name='delete_user'),
 ]

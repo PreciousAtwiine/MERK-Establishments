@@ -71,17 +71,29 @@ def add_sale(request):
 def view_sales(request):
     sales = Sale.objects.all().select_related('product_name')
     total_sales = sum(sale.unit_price * sale.quantity for sale in sales)
+    product_count = Stock.objects.count()
+    todays_sales = Sale.objects.filter(date=timezone.now().date()).count()
+    todays_products = Stock.objects.filter(date=timezone.now().date()).count()
     context = {
         'sales': sales,
         'total_sales': total_sales,
+        'product_count': product_count,
+        'todays_sales': todays_sales,
+        'todays_products': todays_products,
     }
     return render(request, 'view_sales.html', context)
 
 @login_required
 def products(request):
     products = Stock.objects.all()
+    product_count = products.count()
+    todays_sales = Sale.objects.filter(date=timezone.now().date()).count()
+    todays_products = Stock.objects.filter(date=timezone.now().date()).count()
     context = {
         'products': products,
+        'product_count': product_count,
+        'todays_sales': todays_sales,
+        'todays_products': todays_products,
     }
     return render(request, 'products.html', context)
 
@@ -210,7 +222,31 @@ def set_new_password(request):
         form = SetNewPasswordForm()
     return render(request, 'set_password.html', {'form': form})
 
-        
-            
-        
-        
+@login_required
+def users_list(request):
+    users = User.objects.all().order_by('username')
+    return render(request, 'users.html', {'users': users})
+
+@login_required
+def edit_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        form = UserForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'User updated successfully!')
+            return redirect('home:users_list')
+    else:
+        form = UserForm(instance=user)
+    return render(request, 'edit_user.html', {'form': form, 'user_obj': user})
+
+@login_required
+def delete_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        if request.user.pk == user.pk:
+            messages.error(request, "You can't delete your own account while signed in.")
+        else:
+            user.delete()
+            messages.success(request, 'User deleted successfully!')
+    return redirect('home:users_list')

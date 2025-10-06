@@ -65,10 +65,10 @@
                 <tbody>
                     {% for sale in sales %}
                     <tr>
-                        <td class="text-muted">#{{ sale.id }}</td>
+                        <td class="text-muted">{{ sale.id }}</td>
                         <td>{{ sale.product_name }}</td>
                         <td class="text-end">{{ sale.quantity }}</td>
-                        <td class="text-end">${{ sale.unit_price }}</td>
+                        <td class="text-end">UGX.{{ sale.unit_price }}</td>
                         <td>{{ sale.date|date:"Y-m-d" }}</td>
                         <td class="text-nowrap">
                             <a href="{% url 'home:edit_sale' sale.id %}" class="btn btn-sm btn-outline-primary">Edit</a>

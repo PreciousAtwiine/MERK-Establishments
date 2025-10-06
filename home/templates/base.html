@@ -83,7 +83,7 @@
 </head>
 <body>
     <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: #424242;">
         <div class="container-fluid">
             {% if request.resolver_match.view_name != 'home:logout' %}
             <button class="btn btn-link text-white me-2" type="button" id="sidebarToggle" aria-label="Toggle sidebar">
@@ -119,6 +119,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'home:users_list' %}active{% endif %}" 
+                       href="{% url 'home:users_list' %}">
+                        <i class="fas fa-users me-2"></i>Users
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'home:add_sale' %}active{% endif %}" 
                        href="{% url 'home:add_sale' %}">
                         <i class="fas fa-plus-circle me-2"></i>Add Sale
@@ -151,7 +157,9 @@
                     <div class="card-body">
                         <h6 class="card-title">Quick Stats</h6>
                         <p class="card-text small">
+                            {% comment %} Automatically adds the products and sales {% endcomment %}
                             <i class="fas fa-box me-1"></i> Products: {{ request.product_count|default:"0" }}<br>
+                            <i class="fas fa-box-open me-1"></i> Products Added Today: {{ request.todays_products|default:"0" }}<br>
                             <i class="fas fa-shopping-cart me-1"></i> Today's Sales: {{ request.todays_sales|default:"0" }}
                         </p>
                     </div>

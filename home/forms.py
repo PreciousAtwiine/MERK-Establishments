@@ -83,3 +83,20 @@ class SetNewPasswordForm(forms.Form):
         if pwd1:
             validate_password(pwd1)
         return cleaned
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'is_active', 'is_staff']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Style boolean fields with Bootstrap switches
+        self.fields['is_active'].widget = forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        self.fields['is_staff'].widget = forms.CheckboxInput(attrs={'class': 'form-check-input'})
