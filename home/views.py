@@ -250,3 +250,32 @@ def delete_user(request, pk):
             user.delete()
             messages.success(request, 'User deleted successfully!')
     return redirect('home:users_list')
+
+@login_required
+def profile_view(request, pk):
+    target_user = get_object_or_404(User, pk=pk)
+    # Ensure a profile exists
+    profile, _ = getattr(target_user, 'profile', None), None
+    if profile is None:
+        from .models import Profile
+        profile, _ = Profile.objects.get_or_create(user=target_user)
+
+    can_edit = request.user.is_staff or request.user.pk == target_user.pk
+    if request.method == 'POST' and can_edit:
+        user_form = UserUpdateForm(request.POST, instance=target_user)
+        profile_form = ProfileForm(request.POST, request.FILES, instance=profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('home:profile', pk=target_user.pk)
+    else:
+        user_form = UserUpdateForm(instance=target_user)
+        profile_form = ProfileForm(instance=profile)
+
+    return render(request, 'profile.html', {
+        'target_user': target_user,
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'can_edit': can_edit,
+    })

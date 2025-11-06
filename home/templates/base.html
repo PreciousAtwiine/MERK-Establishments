@@ -19,13 +19,13 @@
             left: 0;
             top: 56px;
             width: 250px;
-            background-color: #f3e8ff; /* lilac */
+            background-color: #424242; /* match top bar gray */
             padding: 20px;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
             transform: translateX(-260px);
             transition: transform .25s ease;
             z-index: 1040;
-            color: #000000; /* black text */
+            color: #ffffff; /* white text for contrast */
         }
         .sidebar-open .sidebar {
             transform: translateX(0);
@@ -47,10 +47,10 @@
             border-radius: 5px;
         }
         .sidebar .nav-link:hover {
-            background-color: #ede4ff; /* lighter lilac hover */
+            background-color: #E3F2FD; /* lighter baby blue hover */
         }
         .sidebar .nav-link.active {
-            background-color: #e9d5ff; /* deeper lilac active */
+            background-color: #90CAF9; /* deeper baby blue active */
             color: #000000; /* keep text black */
         }
         /* Modern sidebar buttons */
@@ -72,10 +72,10 @@
         .sidebar .btn-outline-primary { border-width: 1px; }
         .sidebar .btn:active { transform: translateY(1px); }
         @media (prefers-color-scheme: dark) {
-            .sidebar { background-color: #f3e8ff; color: #000000; }
+            .sidebar { background-color: #424242; color: #ffffff; }
             .sidebar .nav .nav-link { background: #ffffff; color: #000000; border-color: rgba(2,6,23,.18); }
-            .sidebar .nav .nav-link:hover { box-shadow: 0 10px 24px rgba(0,0,0,.25); background: #ede4ff; }
-            .sidebar .nav .nav-link.active { background: #e9d5ff; color: #000000; border-color: rgba(124,58,237,.35); }
+            .sidebar .nav .nav-link:hover { box-shadow: 0 10px 24px rgba(0,0,0,.25); background: #E3F2FD; }
+            .sidebar .nav .nav-link.active { background: #90CAF9; color: #000000; border-color: rgba(13,110,253,.35); }
             .sidebar .btn-outline-primary { color: #0d6efd; border-color: rgba(13,110,253,.5); background: #ffffff; }
         }
     </style>
@@ -100,7 +100,62 @@
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav"></div>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    {% if request.user.is_authenticated %}
+                    <!-- Quick Stats (Navbar) - responsive -->
+                    <li class="nav-item d-none d-lg-flex me-3">
+                        <span class="nav-link p-0 text-white-50 d-flex align-items-center">
+                            <span class="me-3 d-flex align-items-center">
+                                <i class="fas fa-box-open me-1"></i>
+                                <span class="small">Today Products: {{ todays_products|default:"0" }}</span>
+                            </span>
+                            <span class="d-flex align-items-center">
+                                <i class="fas fa-shopping-cart me-1"></i>
+                                <span class="small">Today Sales: {{ todays_sales|default:"0" }}</span>
+                            </span>
+                        </span>
+                    </li>
+                    <!-- Collapsed (mobile/tablet) shows stats as menu items -->
+                    <li class="nav-item d-lg-none">
+                        <span class="nav-link text-white-50">
+                            <i class="fas fa-box-open me-1"></i>
+                            <span class="small">Today Products: {{ todays_products|default:"0" }}</span>
+                        </span>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <span class="nav-link text-white-50">
+                            <i class="fas fa-shopping-cart me-1"></i>
+                            <span class="small">Today Sales: {{ todays_sales|default:"0" }}</span>
+                        </span>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% with avatar=request.user.profile.avatar %}
+                                {% if avatar %}
+                                    <img src="{{ avatar.url }}" alt="Avatar" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
+                                {% else %}
+                                    <span class="d-inline-flex rounded-circle bg-light me-2" style="width:32px;height:32px;align-items:center;justify-content:center;">
+                                        <i class="fas fa-user text-secondary" style="font-size:14px;"></i>
+                                    </span>
+                                {% endif %}
+                            {% endwith %}
+                            <span class="small">{{ request.user.get_full_name|default:request.user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{% url 'home:profile' request.user.pk %}">My Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{% url 'home:logout' %}" method="post" class="px-3 py-1">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
     </nav>
 
@@ -116,6 +171,12 @@
                     <a class="nav-link {% if request.resolver_match.url_name == 'home:view_sales' %}active{% endif %}" 
                        href="{% url 'home:view_sales' %}">
                         <i class="fas fa-list me-2"></i>View Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'home:profile' and request.user.is_authenticated %}active{% endif %}"
+                       href="{% if request.user.is_authenticated %}{% url 'home:profile' request.user.pk %}{% else %}#{% endif %}">
+                        <i class="fas fa-user me-2"></i>My Profile
                     </a>
                 </li>
                 <li class="nav-item">

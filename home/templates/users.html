@@ -37,6 +37,7 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
+                            <a href="{% url 'home:profile' u.pk %}" class="btn btn-sm btn-outline-primary">Profile</a>
                             <a href="{% url 'home:edit_user' u.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
                             {% if request.user.pk != u.pk %}
                             <form action="{% url 'home:delete_user' u.pk %}" method="post" class="d-inline" onsubmit="return confirm('Delete this user?');">
