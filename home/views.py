@@ -17,8 +17,8 @@ from django.shortcuts import get_object_or_404
 # Create your views here.
 
 class Login(LoginView):
-    form_class = LoginForm #This uses the Login Form created in forms.py
-    template_name = 'login.html' #This is the template that will be used to render the login form
+    form_class = LoginForm
+    template_name = 'index.html'
     
     def get_success_url(self):
         # redirect to the named route for sales
