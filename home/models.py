@@ -1,6 +1,9 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+import os
 
 #Reset password
 class PasswordResetCode(models.Model):
@@ -53,7 +56,22 @@ class Staff(models.Model):
     
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    # Save profile images directly into the app's static folder so they can be
+    # served via STATIC_URL. This uses a FileSystemStorage pointed at
+    # <BASE_DIR>/home/static/profile_pictures and sets the URL base to
+    # /static/profile_pictures/ so avatar.url resolves correctly.
+    _profile_pictures_dir = os.path.join(settings.BASE_DIR, 'home', 'static', 'profile_pictures')
+    try:
+        os.makedirs(_profile_pictures_dir, exist_ok=True)
+    except Exception:
+        pass
+
+    profile_pictures_storage = FileSystemStorage(
+        location=_profile_pictures_dir,
+        base_url=settings.STATIC_URL.rstrip('/') + '/profile_pictures/'
+    )
+
+    avatar = models.ImageField(upload_to='', storage=profile_pictures_storage, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True)
     bio = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
