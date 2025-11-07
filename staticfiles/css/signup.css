@@ -1,0 +1,60 @@
+/* Card styling */
+.card {
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1.5rem;
+}
+
+/* Form styling */
+.form-control {
+    border-radius: 5px;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Button styling */
+.btn-primary {
+    background-color: #4e73df;
+    border: none;
+    border-radius: 5px;
+    padding: 12px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #2e59d9;
+}
+
+/* Link styling */
+a {
+    color: #4e73df;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+a:hover {
+    color: #2e59d9;
+    text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .card {
+        margin-top: 2rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+}
