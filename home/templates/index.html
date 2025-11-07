@@ -41,6 +41,17 @@
                     <h2 class="h4 fw-semibold mb-2 text-center">Sign in</h2>
                     <p class="text-secondary text-center mb-4">Enter your credentials to continue</p>
 
+                    
+{% if messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+            <div class="alert alert-danger" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
                     <form method="post" action="{% url 'home:login' %}" novalidate>
                         {% csrf_token %}
                         {{ form|crispy }}
