@@ -16,25 +16,46 @@ from django.shortcuts import get_object_or_404
 
 # Create your views here.
 
+from django.contrib.auth.views import LoginView
+from django.contrib import messages
+from django.urls import reverse_lazy
+
 class Login(LoginView):
     form_class = LoginForm
     template_name = 'index.html'
-    
+
     def get_success_url(self):
-        # redirect to the named route for sales
         return reverse_lazy('home:view_sales')
-        #return '/view/'
-    
-    def dispatch(self,request, *args, **kwargs):
-        #This method is used to handle the request and return the response
+
+    def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect(self.get_success_url())
         return super().dispatch(request, *args, **kwargs)
-    
-    def form_invalid(self,form):
-        #This method is used to handle the case when the form is invalid
+
+    def form_invalid(self, form):
         messages.error(self.request, 'Invalid username or password.')
-        return redirect(reverse_lazy('home:signup'))
+        # Re-render the login page with form errors instead of redirecting to signup
+        return self.render_to_response(self.get_context_data(form=form))
+
+# class Login(LoginView):
+#     form_class = LoginForm
+#     template_name = 'index.html'
+    
+#     def get_success_url(self):
+#         # redirect to the named route for sales
+#         return reverse_lazy('home:view_sales')
+#         #return '/view/'
+    
+#     def dispatch(self,request, *args, **kwargs):
+#         #This method is used to handle the request and return the response
+#         if request.user.is_authenticated:
+#             return redirect(self.get_success_url())
+#         return super().dispatch(request, *args, **kwargs)
+    
+#     def form_invalid(self,form):
+#         #This method is used to handle the case when the form is invalid
+#         messages.error(self.request, 'Invalid username or password.')
+#         return redirect(reverse_lazy('home:signup'))
     
 
 def signup(request):
