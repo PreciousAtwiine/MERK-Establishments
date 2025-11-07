@@ -157,8 +157,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 STATICFILES_DIRS = [
-    BASE_DIR / "merk" / "static",
+    BASE_DIR / "home" / "static",
 ]
+
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Media (user uploads)
 MEDIA_URL = '/media/'
