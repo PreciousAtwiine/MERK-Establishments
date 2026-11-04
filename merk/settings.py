@@ -17,28 +17,38 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-#SECRET_KEY = os.environ.get('django-insecure-89xu1yq3s))psvh-+6evb6s%^wtoevpe@#8ipy!ukxgo(6zyv3')
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret-key')
-
-# SECRET_KEY = os.environ.get(
-#     'SECRET_KEY',
-#     'django-insecure-89xu1yq3s))psvh-+6evb6s%^wtoevpe@#8ipy!ukxgo(6zyv3'
-# )
-
-#SECRET_KEY = 'django-insecure-89xu1yq3s))psvh-+6evb6s%^wtoevpe@#8ipy!ukxgo(6zyv3'
+# Deployment checklist: https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# All secrets come from environment variables. See README.md.
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split(',')
-#DEBUG = True
 
-#ALLOWED_HOSTS = []
+# SECURITY WARNING: keep the secret key used in production secret!
+# A throwaway key is only allowed for local development (DEBUG=True). Without
+# DEBUG, a missing SECRET_KEY stops the app rather than running with a key
+# that anyone can read in this repository.
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'dev-only-insecure-key-do-not-use-in-production'
+    else:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured('Set the SECRET_KEY environment variable (required when DEBUG is not True).')
+
+# Comma-separated list of trusted origins for CSRF, e.g. https://merk.onrender.com
+CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o]
+
+# HTTPS hardening for production (DEBUG off). Hosts like Render terminate TLS
+# at a proxy and pass X-Forwarded-Proto. Set SECURE_SSL_REDIRECT=False only if
+# you must serve over plain HTTP.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS is opt-in: once browsers cache it, the site can't fall back to HTTP.
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))
 
 
 # Application definition
@@ -168,14 +178,30 @@ STATICFILES_DIRS = [
     BASE_DIR / "home" / "static",
 ]
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# STATICFILES_STORAGE was removed in Django 5.1, so the old setting was being
+# ignored. STORAGES is the current way to enable WhiteNoise's compressed,
+# cache-busting storage (run `collectstatic` before serving with DEBUG off).
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 # Media (user uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Email (console backend for dev)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'no-reply@merk.local'
+# Email: printed to the console by default. Set EMAIL_BACKEND and the SMTP
+# variables in the environment to send real email.
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@merk.local')
+
+# Map Django's "error" message level to Bootstrap's "danger" alert style.
+from django.contrib.messages import constants as message_constants
+MESSAGE_TAGS = {message_constants.ERROR: 'danger'}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

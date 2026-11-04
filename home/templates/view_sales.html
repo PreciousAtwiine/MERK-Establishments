@@ -1,96 +1,98 @@
 {% extends 'base.html' %}
-
-{% block title %}Sales{% endblock %}
-
-{% block extra_css %}
-<style>
-    .stat-chip { padding: .5rem .75rem; border: 1px solid rgba(124, 58, 237, .25); border-radius: .75rem; background: #f3e8ff; }
-    .stat-chip .label { color: #000000; font-size: .85rem; }
-    .stat-chip .value { font-weight: 700; color: #000000; }
-    .table thead th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
-    .empty-state { border: 1px dashed rgba(2,6,23,.15); border-radius: 1rem; background: #ffffff; }
-    @media (prefers-color-scheme: dark) {
-        /* Keep stat chips lilac and text black in dark mode */
-        .stat-chip { background: #f3e8ff; border-color: rgba(124,58,237,.35); }
-        .stat-chip .label { color: #0c0c0c; }
-        /* For text */
-        .stat-chip .value { color: #000000; }
-        /* For table header */
-        .table thead th { background: #f0cfe8; }
-        /* Keep the Add Sale area light even in dark mode */
-        .empty-state { background: #ffffff; border-color: rgba(225, 228, 238, 0.772); color: #000000d0; }
-    }
-</style>
-{% endblock %}
-
-{% block header %}Sales Records{% endblock %}
-
+{% block title %}Sales overview{% endblock %}
+{% block header %}Sales overview{% endblock %}
+{% block subtitle %}<p class="subtitle">Every recorded sale, with today's activity and stock at a glance.</p>{% endblock %}
 {% block header_buttons %}
-<a href="{% url 'home:add_sale' %}" class="btn btn-primary">
-    <i class="fas fa-plus me-2"></i>Add New Sale
-    </a>
+<a href="{% url 'home:add_sale' %}" class="btn btn-primary btn-icon"><i class="fas fa-plus" aria-hidden="true"></i>Record a sale</a>
 {% endblock %}
 
 {% block content %}
-<div class="row g-3 mb-4">
-    <div class="col-auto">
-        <div class="stat-chip">
-            <div class="label">Total Sales</div>
-            <div class="value">{{ total_sales }}</div>
+<section aria-label="Summary" class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="panel kpi is-accent">
+            <p class="kpi-label"><i class="fas fa-sack-dollar" aria-hidden="true"></i>Total sales value</p>
+            <p class="kpi-value"><small>UGX</small> {{ total_sales|floatformat:"0g" }}</p>
+            <p class="kpi-note">Across {{ sales|length }} record{{ sales|length|pluralize }}</p>
         </div>
     </div>
-    <div class="col-auto">
-        <div class="stat-chip">
-            <div class="label">Records</div>
-            <div class="value">{{ sales|length }}</div>
+    <div class="col-6 col-xl-3">
+        <div class="panel kpi">
+            <p class="kpi-label"><i class="fas fa-receipt" aria-hidden="true"></i>Sales today</p>
+            <p class="kpi-value">{{ todays_sales }}</p>
+            <p class="kpi-note">UGX {{ todays_value|floatformat:"0g" }}</p>
         </div>
     </div>
-</div>
+    <div class="col-6 col-xl-3">
+        <div class="panel kpi">
+            <p class="kpi-label"><i class="fas fa-boxes-stacked" aria-hidden="true"></i>Products</p>
+            <p class="kpi-value">{{ product_count }}</p>
+            <p class="kpi-note">{{ todays_products }} added today</p>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="panel kpi">
+            <p class="kpi-label"><i class="fas fa-warehouse" aria-hidden="true"></i>Units in stock</p>
+            <p class="kpi-value">{{ units_in_stock|floatformat:"0g" }}</p>
+            <p class="kpi-note">{% if out_of_stock %}{{ out_of_stock }} product{{ out_of_stock|pluralize }} out of stock{% else %}No products out of stock{% endif %}</p>
+        </div>
+    </div>
+</section>
 
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        {% if sales %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="text-nowrap">Sale ID</th>
-                        <th>Product</th>
-                        <th class="text-end">Quantity</th>
-                        <th class="text-end">Unit Price</th>
-                        <th class="text-nowrap">Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sale in sales %}
-                    <tr>
-                        <td class="text-muted">{{ sale.id }}</td>
-                        <td>{{ sale.product_name }}</td>
-                        <td class="text-end">{{ sale.quantity }}</td>
-                        <td class="text-end">UGX.{{ sale.unit_price }}</td>
-                        <td>{{ sale.date|date:"Y-m-d" }}</td>
-                        <td class="text-nowrap">
-                            <a href="{% url 'home:edit_sale' sale.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <form method="post" action="{% url 'home:delete_sale' sale.id %}" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this sale?');">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-5 text-center empty-state">
-            <h5 class="mb-2">No sales records found</h5>
-            <p class="text-secondary mb-4">Get started by adding your first sale.</p>
-            <a href="{% url 'home:add_sale' %}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Add Sale
-            </a>
-        </div>
-        {% endif %}
+<section class="panel" aria-labelledby="sales-title">
+    <div class="panel-head">
+        <h2 id="sales-title">Sales records</h2>
+        <span class="pill">{{ sales|length }} total</span>
     </div>
-</div>
+    {% if sales %}
+    <div class="table-responsive">
+        <table class="table table-hover data-table stack-sm">
+            <thead>
+                <tr>
+                    <th scope="col">Sale</th>
+                    <th scope="col">Product</th>
+                    <th scope="col">Customer</th>
+                    <th scope="col" class="num">Qty</th>
+                    <th scope="col" class="num">Unit price</th>
+                    <th scope="col" class="num">Total (UGX)</th>
+                    <th scope="col">Payment</th>
+                    <th scope="col">Agent</th>
+                    <th scope="col">Date</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales %}
+                <tr>
+                    <td class="text-muted tabular" data-label="Sale">#{{ sale.id }}</td>
+                    <td class="fw-medium" data-label="Product">{{ sale.product_name }}</td>
+                    <td data-label="Customer"><span>{{ sale.customer_name }}{% if sale.organization %}<span class="sub">{{ sale.organization }}</span>{% endif %}</span></td>
+                    <td class="num" data-label="Qty">{{ sale.quantity }}</td>
+                    <td class="num" data-label="Unit price">{{ sale.unit_price|floatformat:"-2g" }}</td>
+                    <td class="num fw-semibold" data-label="Total (UGX)">{{ sale.total|floatformat:"-2g" }}</td>
+                    <td data-label="Payment"><span class="pill {% if sale.payment_method == 'Cash' %}pill-green{% elif sale.payment_method == 'Mpesa' %}pill-amber{% else %}pill-blue{% endif %}">{{ sale.get_payment_method_display }}</span></td>
+                    <td data-label="Agent">{{ sale.sales_agent }}</td>
+                    <td class="text-nowrap" data-label="Date">{{ sale.date|date:"d M Y" }}</td>
+                    <td class="cell-actions">
+                        <div class="row-actions">
+                            <a href="{% url 'home:edit_sale' sale.id %}" class="btn btn-sm btn-light" aria-label="Edit sale #{{ sale.id }}"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                            <form method="post" action="{% url 'home:delete_sale' sale.id %}" data-confirm="Delete sale #{{ sale.id }}? This can't be undone.">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-light text-danger" aria-label="Delete sale #{{ sale.id }}"><i class="fas fa-trash-can" aria-hidden="true"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-receipt" aria-hidden="true"></i>
+        <h3>No sales recorded yet</h3>
+        <p>Record your first sale to see it here.</p>
+        <a href="{% url 'home:add_sale' %}" class="btn btn-primary btn-icon"><i class="fas fa-plus" aria-hidden="true"></i>Record a sale</a>
+    </div>
+    {% endif %}
+</section>
 {% endblock %}

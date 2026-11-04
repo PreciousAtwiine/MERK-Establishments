@@ -1,47 +1,63 @@
 {% extends 'base.html' %}
-{% block content %}
-{% block header %}
-<h2>Products</h2>
-{% endblock %}
+{% block title %}Products{% endblock %}
+{% block header %}Products{% endblock %}
+{% block subtitle %}<p class="subtitle">{{ product_count }} product{{ product_count|pluralize }} in the catalogue.</p>{% endblock %}
 {% block header_buttons %}
-<a href="{% url 'home:add_product' %}" class="btn btn-primary mb-3">Add Product</a>
+<a href="{% url 'home:add_product' %}" class="btn btn-primary btn-icon"><i class="fas fa-plus" aria-hidden="true"></i>Add product</a>
 {% endblock %}
-<div class="alert alert-info">
-    Total Products: {{ products|length }}
-</div>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Product ID</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Price</th>
-            <th>Quantity</th>
-            <th>Date Added</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for Stock in products %}
-        <tr>
-            <td>{{ Stock.id }}</td>
-            <td>{{ Stock.product_name }}</td>
-            <td>{{ Stock.product_description }}</td>
-            <td>UGX {{ Stock.unit_price }}</td>
-            <td>{{ Stock.quantity }}</td>
-            <td>{{ Stock.date|date:"Y-m-d" }}</td>
-            <td class="text-nowrap">
-                <a href="{% url 'home:edit_product' Stock.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                <form method="post" action="{% url 'home:delete_product' Stock.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this product?');">Delete</button>
-                </form>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6">No products found.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-{%endblock%}
+
+{% block content %}
+<section class="panel" aria-label="Product list">
+    {% if products %}
+    <div class="table-responsive">
+        <table class="table table-hover data-table stack-sm">
+            <thead>
+                <tr>
+                    <th scope="col">Product</th>
+                    <th scope="col">Supplier</th>
+                    <th scope="col" class="num">Unit cost</th>
+                    <th scope="col" class="num">Unit price</th>
+                    <th scope="col" class="num">In stock</th>
+                    <th scope="col">Added</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td class="cell-title">
+                        <span class="fw-medium">{{ product.product_name }}</span>
+                        <span class="sub">{{ product.product_description|truncatechars:70 }}</span>
+                    </td>
+                    <td data-label="Supplier">{{ product.product_supplier }}</td>
+                    <td class="num" data-label="Unit cost (UGX)">{{ product.unit_cost|floatformat:"-2g" }}</td>
+                    <td class="num" data-label="Unit price (UGX)">{{ product.unit_price|floatformat:"-2g" }}</td>
+                    <td class="num" data-label="In stock">
+                        {% if product.quantity <= 0 %}<span class="pill pill-red">Out of stock</span>{% else %}{{ product.quantity }}{% endif %}
+                    </td>
+                    <td class="text-nowrap" data-label="Added">{{ product.date|date:"d M Y" }}</td>
+                    <td class="cell-actions">
+                        <div class="row-actions">
+                            <a href="{% url 'home:edit_product' product.id %}" class="btn btn-sm btn-light" aria-label="Edit {{ product.product_name }}"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                            <form method="post" action="{% url 'home:delete_product' product.id %}" data-confirm="Delete {{ product.product_name }}? Its sales records will also be deleted.">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-light text-danger" aria-label="Delete {{ product.product_name }}"><i class="fas fa-trash-can" aria-hidden="true"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="small text-muted px-3 py-2 mb-0 border-top">Prices in UGX.</p>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-boxes-stacked" aria-hidden="true"></i>
+        <h3>No products yet</h3>
+        <p>Add a product before recording sales against it.</p>
+        <a href="{% url 'home:add_product' %}" class="btn btn-primary btn-icon"><i class="fas fa-plus" aria-hidden="true"></i>Add product</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

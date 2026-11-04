@@ -1,10 +1,30 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}{% if is_edit %}Edit product{% else %}Add product{% endif %}{% endblock %}
+{% block header %}{% if is_edit %}Edit {{ product.product_name }}{% else %}Add product{% endif %}{% endblock %}
+{% block subtitle %}<p class="subtitle">{% if is_edit %}Update this product's details and stock.{% else %}Add a product to the catalogue.{% endif %}</p>{% endblock %}
+
 {% block content %}
-<h2>Add Product</h2>
-<form method="post">
+<form method="post" class="panel form-panel" novalidate>
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Add Product</button>
-    <a href="{% url 'home:products' %}" class="btn btn-secondary">Cancel</a>
+    <div class="panel-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <p class="form-section-title">Product</p>
+        <div class="row g-3 mb-2">
+            <div class="col-md-6">{{ form.product_name|as_crispy_field }}</div>
+            <div class="col-md-6">{{ form.product_supplier|as_crispy_field }}</div>
+            <div class="col-12">{{ form.product_description|as_crispy_field }}</div>
+        </div>
+        <p class="form-section-title mt-2">Pricing and stock</p>
+        <div class="row g-3">
+            <div class="col-md-4">{{ form.unit_cost|as_crispy_field }}</div>
+            <div class="col-md-4">{{ form.unit_price|as_crispy_field }}</div>
+            <div class="col-md-4">{{ form.quantity|as_crispy_field }}</div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{% if is_edit %}Save changes{% else %}Add product{% endif %}</button>
+            <a href="{% url 'home:products' %}" class="btn btn-light">Cancel</a>
+        </div>
+    </div>
 </form>
 {% endblock %}

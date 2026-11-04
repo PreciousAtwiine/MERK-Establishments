@@ -1,37 +1,32 @@
 {% extends 'base.html' %}
-
 {% load crispy_forms_tags %}
-
-{% block title %}Add Sale{% endblock %}
-
-{% block extra_css %}
-<style>
-  .form-wrapper { max-width: 720px; margin: 0 auto; }
-  .card { border-radius: 16px; }
-  .help-text { color: #6b7280; }
-  @media (prefers-color-scheme: dark) { .help-text { color: #9ca3af; } }
-</style>
-{% endblock %}
-
-{% block header %}Add New Sale{% endblock %}
-
-<!-- {% block header_buttons %}
-<a href="{% url 'home:view_sales' %}" class="btn btn-outline-secondary">Cancel</a>
-{% endblock %} -->
+{% block title %}{% if is_edit %}Edit sale{% else %}Record a sale{% endif %}{% endblock %}
+{% block header %}{% if is_edit %}Edit sale #{{ sale.id }}{% else %}Record a sale{% endif %}{% endblock %}
+{% block subtitle %}<p class="subtitle">{% if is_edit %}Update the details of this sale.{% else %}Enter what was sold and who bought it.{% endif %}</p>{% endblock %}
 
 {% block content %}
-<div class="form-wrapper">
-  <div class="card shadow-sm">
-    <div class="card-body p-4 p-md-5">
-      <form method="post" novalidate>
-        {% csrf_token %}
-        {{ form|crispy }}
-        <div class="d-flex gap-2 mt-3">
-          <button type="submit" class="btn btn-primary">Record Sale</button>
-          <a href="{% url 'home:view_sales' %}" class="btn btn-secondary">Cancel</a>
+<form method="post" class="panel form-panel" novalidate>
+    {% csrf_token %}
+    <div class="panel-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <p class="form-section-title">Sale</p>
+        <div class="row g-3 mb-2">
+            <div class="col-md-6">{{ form.product_name|as_crispy_field }}</div>
+            <div class="col-md-3 col-6">{{ form.quantity|as_crispy_field }}</div>
+            <div class="col-md-3 col-6">{{ form.unit_price|as_crispy_field }}</div>
+            <div class="col-md-6">{{ form.payment_method|as_crispy_field }}</div>
+            <div class="col-md-6">{{ form.sales_agent|as_crispy_field }}</div>
         </div>
-      </form>
+        <p class="form-section-title mt-2">Customer</p>
+        <div class="row g-3">
+            <div class="col-md-6">{{ form.customer_name|as_crispy_field }}</div>
+            <div class="col-md-6">{{ form.customer_phonenumber|as_crispy_field }}</div>
+            <div class="col-12">{{ form.organization|as_crispy_field }}</div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{% if is_edit %}Save changes{% else %}Record sale{% endif %}</button>
+            <a href="{% url 'home:view_sales' %}" class="btn btn-light">Cancel</a>
+        </div>
     </div>
-  </div>
-</div>
+</form>
 {% endblock %}

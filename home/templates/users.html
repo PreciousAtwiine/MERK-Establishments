@@ -1,61 +1,54 @@
 {% extends 'base.html' %}
 {% block title %}Users{% endblock %}
 {% block header %}Users{% endblock %}
+{% block subtitle %}<p class="subtitle">Accounts with access to MERK. Only staff can see and manage this list.</p>{% endblock %}
+
 {% block content %}
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Active</th>
-                        <th>Staff</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in users %}
-                    <tr>
-                        <td>{{ u.username }}</td>
-                        <td>{{ u.first_name }} {{ u.last_name }}</td>
-                        <td>{{ u.email }}</td>
-                        <td>
-                            {% if u.is_active %}
-                                <span class="badge bg-success">Yes</span>
-                            {% else %}
-                                <span class="badge bg-secondary">No</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if u.is_staff %}
-                                <span class="badge bg-primary">Staff</span>
-                            {% else %}
-                                <span class="badge bg-light text-dark">No</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <a href="{% url 'home:profile' u.pk %}" class="btn btn-sm btn-outline-primary">Profile</a>
-                            <a href="{% url 'home:edit_user' u.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+<section class="panel" aria-label="User accounts">
+    <div class="table-responsive">
+        <table class="table table-hover data-table stack-sm">
+            <thead>
+                <tr>
+                    <th scope="col">User</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Role</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="cell-title">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if u.profile.avatar %}<img src="{{ u.profile.avatar.url }}" alt="" class="avatar">{% else %}<span class="avatar" aria-hidden="true">{{ u.username|first|upper }}</span>{% endif %}
+                            <div>
+                                <span class="fw-medium">{{ u.get_full_name|default:u.username }}</span>
+                                <span class="sub">@{{ u.username }}{% if request.user.pk == u.pk %} · you{% endif %}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Email" class="text-break">{{ u.email|default:"—" }}</td>
+                    <td data-label="Status">{% if u.is_active %}<span class="pill pill-green">Active</span>{% else %}<span class="pill">Inactive</span>{% endif %}</td>
+                    <td data-label="Role">{% if u.is_superuser %}<span class="pill pill-amber">Admin</span>{% elif u.is_staff %}<span class="pill pill-blue">Staff</span>{% else %}<span class="pill">Member</span>{% endif %}</td>
+                    <td class="cell-actions">
+                        <div class="row-actions">
+                            <a href="{% url 'home:profile' u.pk %}" class="btn btn-sm btn-light">Profile</a>
+                            <a href="{% url 'home:edit_user' u.pk %}" class="btn btn-sm btn-light" aria-label="Edit {{ u.username }}"><i class="fas fa-pen" aria-hidden="true"></i></a>
                             {% if request.user.pk != u.pk %}
-                            <form action="{% url 'home:delete_user' u.pk %}" method="post" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                            <form action="{% url 'home:delete_user' u.pk %}" method="post" data-confirm="Delete the account {{ u.username }}? This can't be undone.">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                <button type="submit" class="btn btn-sm btn-light text-danger" aria-label="Delete {{ u.username }}"><i class="fas fa-trash-can" aria-hidden="true"></i></button>
                             </form>
                             {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">No users found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5"><div class="empty-state"><h3>No users found</h3></div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    </div>
+</section>
 {% endblock %}
-

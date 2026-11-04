@@ -1,0 +1,26 @@
+# Databases and data exports — never commit real records
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+db.json
+
+# Secrets
+.env
+.env.*
+
+# User uploads (profile pictures are saved here by the Profile model)
+media/
+home/static/profile_pictures/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Tooling
+.coverage
+htmlcov/
+.idea/
+.vscode/

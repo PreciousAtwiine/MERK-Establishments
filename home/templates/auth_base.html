@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    {% include 'partials/head.html' %}
+    <meta name="description" content="MERK Establishments Limited — stock, sales and staff management.">
+    <title>{% block title %}{% endblock %} | MERK Establishments</title>
+</head>
+<body>
+    <div class="auth">
+        <aside class="auth-aside">
+            <a class="brand p-0" href="{% url 'home:login' %}">
+                <img src="{% static 'images/logo.png' %}" alt="" width="44" height="44">
+                <span><span class="brand-name">MERK</span><span class="brand-sub">Establishments Ltd</span></span>
+            </a>
+            <div class="auth-copy">
+                <h1>Stock, sales and staff in one place.</h1>
+                <p>Record every sale, keep the product catalogue up to date and manage who has access.</p>
+                <ul class="auth-points">
+                    <li><i class="fas fa-receipt" aria-hidden="true"></i>Sales by cash, Mpesa or bank</li>
+                    <li><i class="fas fa-boxes-stacked" aria-hidden="true"></i>Products with cost, price and quantity</li>
+                    <li><i class="fas fa-user-shield" aria-hidden="true"></i>Staff-managed user accounts</li>
+                </ul>
+            </div>
+            <p class="small mb-0 auth-copy" style="color:#8da0bd">© {% now "Y" %} MERK Establishments Limited</p>
+        </aside>
+
+        <main class="auth-main">
+            <div class="auth-card panel">
+                {% include 'partials/messages.html' %}
+                {% block auth_content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

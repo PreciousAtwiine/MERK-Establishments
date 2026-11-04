@@ -61,14 +61,17 @@ class RequestLoginCodeForm(forms.Form):
     email = forms.EmailField()
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        if not User.objects.filter(email__iexact=email).exists():
-            raise ValidationError("No account found with that email.")
-        return email
+        # Deliberately no "account not found" error: revealing which emails
+        # have accounts helps attackers. The view responds the same either way.
+        return self.cleaned_data['email'].strip()
 
 class VerifyLoginCodeForm(forms.Form):
-    email = forms.EmailField()
-    code = forms.CharField(max_length=10)
+    email = forms.EmailField(widget=forms.HiddenInput())
+    code = forms.CharField(
+        max_length=10,
+        label='6-digit code',
+        widget=forms.TextInput(attrs={'inputmode': 'numeric', 'autocomplete': 'one-time-code', 'pattern': '[0-9]*'}),
+    )
 
 class SetNewPasswordForm(forms.Form):
     password1 = forms.CharField(label='New password', widget=forms.PasswordInput(attrs={'class':'form-control'}))

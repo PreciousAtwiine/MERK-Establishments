@@ -40,6 +40,12 @@ class Sale(models.Model):
     customer_phonenumber= models.CharField(max_length=14,blank=True)
     payment_method = models.CharField(choices=[('Cash','Cash'),('Mpesa','Mpesa'),('Bank','Bank')],max_length=10, default='Cash')
     date= models.DateField(auto_now_add=True)
+
+    @property
+    def total(self):
+        """Value of this sale (quantity × unit price). Computed, not stored."""
+        return self.unit_price * self.quantity
+
     def __str__(self):
         return f"{self.product_name} - {self.quantity} units sold by {self.sales_agent} on {self.date}"
     

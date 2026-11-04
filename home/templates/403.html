@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Access denied{% endblock %}
+{% block header %}Access denied{% endblock %}
+{% block content %}
+<div class="panel">
+    <div class="empty-state">
+        <i class="fas fa-lock" aria-hidden="true"></i>
+        <h3>You don't have permission to view this page</h3>
+        <p>Ask a staff member if you need access.</p>
+        <a href="{% url 'home:view_sales' %}" class="btn btn-primary">Back to sales overview</a>
+    </div>
+</div>
+{% endblock %}
