@@ -120,9 +120,12 @@ There are 23 tests, run against a temporary database. They cover:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | Neon's **direct** connection string, from Neon → *Connect*, with *Connection pooling* off. It looks like `postgresql://USER:PASSWORD@ep-NAME.REGION.aws.neon.tech/DBNAME?sslmode=require&channel_binding=require`. |
+| `DATABASE_URL` | Neon's **pooled** connection string (hostname contains `-pooler`), used by the running app. Django's server-side cursors are disabled automatically for pooled hosts. |
+| `DATABASE_URL_UNPOOLED` | Neon's **direct** connection string (no `-pooler`), used only by `build.sh` to run migrations, which need a real database session. |
 | `SECRET_KEY` | Click **Generate**. Never copy it anywhere else. |
 | `DEBUG` | `False` |
+
+Both connection strings look like `postgresql://USER:PASSWORD@HOST/neondb?sslmode=require&channel_binding=require`. Get them from Neon → *Connect* (toggle *Connection pooling*), or run `neon env pull` in this folder, which writes both to the git-ignored `.env.local`.
 
 You don't need to set these:
 - `RENDER_EXTERNAL_HOSTNAME` is provided by Render and added to `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.

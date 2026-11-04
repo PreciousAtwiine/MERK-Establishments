@@ -143,6 +143,12 @@ DATABASES = {
     )
 }
 
+# Neon's pooled connection (hostname contains "-pooler") goes through PgBouncer in
+# transaction mode, which can't keep the server-side cursors Django uses for
+# QuerySet.iterator(). Migrations use the direct URL instead (see build.sh).
+if '-pooler' in (DATABASES['default'].get('HOST') or ''):
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

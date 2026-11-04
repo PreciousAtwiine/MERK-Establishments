@@ -24,3 +24,5 @@ env/
 htmlcov/
 .idea/
 .vscode/
+.neon
+node_modules/
