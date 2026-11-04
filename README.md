@@ -100,13 +100,30 @@ There are 23 tests, run against a temporary database. They cover:
 - the staff-only user-management rules, including that a member can't make themselves staff
 - the full password-reset flow, including expiry, cancelling older codes, attempt limits and request limits
 
-## Deployment (for example, Render)
+## Deployment (free: Render web service + Neon PostgreSQL)
 
-1. Create a PostgreSQL database and a web service.
-2. **Build command:** `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
-3. **Start command:** `gunicorn merk.wsgi`
-4. Set `SECRET_KEY`, `ALLOWED_HOSTS`, `DATABASE_URL`, `CSRF_TRUSTED_ORIGINS`, and SMTP settings so reset codes are actually emailed.
-5. Create an administrator from the host's shell: `python manage.py createsuperuser`.
+- **Python version:** `.python-version` pins **3.12**. Render's default for new services is Python 3.14, where `Pillow==11.2.1` has no pre-built wheel and fails to compile, so the build fails. If the Render service has a `PYTHON_VERSION` environment variable, delete it or set it to a 3.12 release, because it overrides the file.
+- **Database:** use Neon's free PostgreSQL, which doesn't expire. Render's free PostgreSQL is deleted 30 days after creation, plus a 14-day grace period.
+
+Render web service settings:
+
+| Setting | Value |
+|---|---|
+| Runtime | Python |
+| Build command | `bash build.sh` (installs requirements, runs `collectstatic` and `migrate`) |
+| Start command | `gunicorn merk.wsgi:application` |
+| `DATABASE_URL` | Neon connection string (`postgresql://…?sslmode=require`) |
+| `SECRET_KEY` | Use Render's "Generate" value |
+| `DEBUG` | `False` |
+
+`RENDER_EXTERNAL_HOSTNAME` is set by Render and is added to `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically. Add any custom domain to `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` yourself. To email reset codes, set the SMTP variables listed above.
+
+After the first deploy, create an administrator from the service's **Shell** tab: `python manage.py createsuperuser`.
+
+Free-tier behaviour:
+- **Sleep:** the service sleeps after 15 minutes without traffic, and the first request then takes about a minute.
+- **Disk:** the local disk is wiped on every deploy, restart or spin-down, so uploaded profile pictures don't persist (see Known limitations).
+- **Database:** Neon suspends the database after 5 minutes idle, and connections are health-checked so the app reconnects.
 
 ## ⚠️ Security notice: data in the repository
 

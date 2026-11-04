@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Page not found{% endblock %}
+{% block header %}Page not found{% endblock %}
+{% block content %}
+<div class="panel">
+    <div class="empty-state">
+        <i class="fas fa-map-signs" aria-hidden="true"></i>
+        <h3>We couldn't find that page</h3>
+        <p>The link may be out of date, or the record may have been deleted.</p>
+        <a href="{% url 'home:view_sales' %}" class="btn btn-primary">Go to sales overview</a>
+    </div>
+</div>
+{% endblock %}

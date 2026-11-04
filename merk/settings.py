@@ -22,7 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split(',')
+ALLOWED_HOSTS = [h for h in os.environ.get('ALLOWED_HOSTS', 'localhost').split(',') if h]
+
+# Render sets RENDER_EXTERNAL_HOSTNAME (e.g. merk.onrender.com) automatically.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # A throwaway key is only allowed for local development (DEBUG=True). Without
@@ -38,6 +43,8 @@ if not SECRET_KEY:
 
 # Comma-separated list of trusted origins for CSRF, e.g. https://merk.onrender.com
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o]
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 # HTTPS hardening for production (DEBUG off). Hosts like Render terminate TLS
 # at a proxy and pass X-Forwarded-Proto. Set SECURE_SSL_REDIRECT=False only if
@@ -128,7 +135,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        # Reuse connections, but check them first: Neon suspends idle databases
+        # and closes their connections.
+        conn_max_age=600,
+        conn_health_checks=True,
     )
 }
 
