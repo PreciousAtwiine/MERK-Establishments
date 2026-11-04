@@ -102,28 +102,55 @@ There are 23 tests, run against a temporary database. They cover:
 
 ## Deployment (free: Render web service + Neon PostgreSQL)
 
-- **Python version:** `.python-version` pins **3.12**. Render's default for new services is Python 3.14, where `Pillow==11.2.1` has no pre-built wheel and fails to compile, so the build fails. If the Render service has a `PYTHON_VERSION` environment variable, delete it or set it to a 3.12 release, because it overrides the file.
-- **Database:** use Neon's free PostgreSQL, which doesn't expire. Render's free PostgreSQL is deleted 30 days after creation, plus a 14-day grace period.
+- **Python version:** `.python-version` pins **3.12**, which Django 5.1 supports and which every pinned package has a ready-made build for. A `PYTHON_VERSION` environment variable on Render overrides the file, so remove it, or set it to a full 3.12 version such as `3.12.11`.
+- **Database:** Neon's free PostgreSQL doesn't expire. Render's free PostgreSQL is suspended 30 days after creation and deleted 14 days later. A suspended Render database accepts the TLS handshake and then drops the connection, which appears as `SSL connection has been closed unexpectedly`.
+- **Static files:** the build must run `collectstatic`. With `DEBUG` off, the static-files storage reads the manifest that `collectstatic` writes. Without it, every page fails with `Missing staticfiles manifest entry`. `build.sh` does this.
 
-Render web service settings:
+### Render web service settings
 
 | Setting | Value |
 |---|---|
 | Runtime | Python |
-| Build command | `bash build.sh` (installs requirements, runs `collectstatic` and `migrate`) |
+| Branch | `master` |
+| Build command | `bash build.sh` (installs requirements, runs `collectstatic`, then `migrate`) |
 | Start command | `gunicorn merk.wsgi:application` |
-| `DATABASE_URL` | Neon connection string (`postgresql://…?sslmode=require`) |
-| `SECRET_KEY` | Use Render's "Generate" value |
+| Instance type | Free |
+
+### Environment variables (Render → service → Environment)
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon's **direct** connection string, from Neon → *Connect*, with *Connection pooling* off. It looks like `postgresql://USER:PASSWORD@ep-NAME.REGION.aws.neon.tech/DBNAME?sslmode=require&channel_binding=require`. |
+| `SECRET_KEY` | Click **Generate**. Never copy it anywhere else. |
 | `DEBUG` | `False` |
 
-`RENDER_EXTERNAL_HOSTNAME` is set by Render and is added to `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically. Add any custom domain to `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` yourself. To email reset codes, set the SMTP variables listed above.
+You don't need to set these:
+- `RENDER_EXTERNAL_HOSTNAME` is provided by Render and added to `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.
+- `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` only need setting for a custom domain (e.g. `merk.example.com` and `https://merk.example.com`).
+- `WEB_CONCURRENCY` sets the number of Gunicorn workers, which defaults to 1.
+- The SMTP variables above are only needed to email reset codes. Without them, codes are printed to Render's logs.
 
-After the first deploy, create an administrator from the service's **Shell** tab: `python manage.py createsuperuser`.
+Migrations run during the build (`build.sh`), because free Render services don't support pre-deploy commands. The first build creates all tables in the empty Neon database.
 
-Free-tier behaviour:
+### Create the first administrator
+
+Free Render services have no Shell or one-off jobs, so create the admin from your own computer against the Neon database. Inside the project folder, with the virtual environment activated and requirements installed:
+
+```powershell
+# Windows PowerShell. Input is hidden, and nothing is saved to files or shell history.
+$secure = Read-Host "Neon connection string" -AsSecureString
+$env:DATABASE_URL = [System.Net.NetworkCredential]::new('', $secure).Password
+$env:DEBUG = "True"   # lets manage.py run on your computer without production settings
+python manage.py createsuperuser
+Remove-Item Env:DATABASE_URL, Env:DEBUG
+```
+
+Then sign in at `https://<your-service>.onrender.com`. To give other people staff access, edit their accounts on the Users page.
+
+### Free-tier behaviour
 - **Sleep:** the service sleeps after 15 minutes without traffic, and the first request then takes about a minute.
 - **Disk:** the local disk is wiped on every deploy, restart or spin-down, so uploaded profile pictures don't persist (see Known limitations).
-- **Database:** Neon suspends the database after 5 minutes idle, and connections are health-checked so the app reconnects.
+- **Database:** Neon suspends the database after 5 minutes idle. Connections are health-checked, so the app reconnects automatically. This was tested by restarting the database while the app was running.
 
 ## ⚠️ Security notice: data in the repository
 
