@@ -1,13 +1,21 @@
+import os
+import smtplib
+import subprocess
+import sys
 from datetime import timedelta
+from pathlib import Path
+from unittest import mock
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import PasswordResetCode, Sale, Stock
+from .views import RESET_CODE_SENT_MESSAGE
 
 # Tests run with DEBUG=False, where the manifest storage needs `collectstatic`.
 # Plain static storage keeps the tests independent of that build step.
@@ -199,7 +207,7 @@ class PasswordResetTests(MerkTestCase):
     def test_same_response_for_unknown_email(self):
         known = self.request_code('member@example.com')
         unknown = self.request_code('nobody@example.com')
-        message = 'If an account uses that email, we have sent it a 6-digit code.'
+        message = RESET_CODE_SENT_MESSAGE
         self.assertContains(known, message)
         self.assertContains(unknown, message)
         self.assertFalse(PasswordResetCode.objects.filter(email='nobody@example.com').exists())
@@ -256,3 +264,97 @@ class PasswordResetTests(MerkTestCase):
     def test_set_password_requires_verified_code(self):
         response = self.client.get(reverse('home:set_new_password'))
         self.assertRedirects(response, reverse('home:request_code'))
+
+    # ---- Email delivery
+
+    def test_code_is_emailed_to_the_address_entered(self):
+        response = self.request_code('member@example.com')
+        record = self.latest_code('member@example.com')
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['member@example.com'])
+        self.assertEqual(sent.from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertIn(record.code, sent.body)
+        self.assertRegex(record.code, r'^\d{6}$')
+        self.assertAlmostEqual(
+            (record.expires_at - timezone.now()).total_seconds(), 5 * 60, delta=10,
+        )
+        # The code itself is never shown in the page.
+        self.assertNotContains(response, record.code)
+
+    @mock.patch('home.views.send_mail', side_effect=smtplib.SMTPAuthenticationError(535, b'bad key'))
+    def test_failed_delivery_is_handled_safely(self, _send_mail):
+        with self.assertLogs('home.views', level='ERROR') as logs:
+            response = self.request_code('member@example.com')
+        record = self.latest_code('member@example.com')
+        # Same generic page as a successful send: no error page, no technical details, no code.
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, RESET_CODE_SENT_MESSAGE)
+        self.assertNotContains(response, record.code)
+        self.assertNotContains(response, 'SMTP')
+        # The undelivered code is cancelled and can't be used.
+        self.assertTrue(record.used)
+        response = self.client.post(reverse('home:verify_code'), {'email': 'member@example.com', 'code': record.code})
+        self.assertContains(response, 'Invalid or expired code.')
+        # The log names only the error type: no code, recipient or server response.
+        log = '\n'.join(logs.output)
+        self.assertIn('SMTPAuthenticationError', log)
+        self.assertNotIn(record.code, log)
+        self.assertNotIn('member@example.com', log)
+        self.assertNotIn('bad key', log)
+
+    def test_failed_delivery_keeps_the_earlier_code_valid(self):
+        self.request_code('member@example.com')
+        first = self.latest_code('member@example.com')
+        with mock.patch('home.views.send_mail', side_effect=OSError('connection refused')), \
+                self.assertLogs('home.views', level='ERROR'):
+            self.request_code('member@example.com')
+        first.refresh_from_db()
+        self.assertFalse(first.used)
+        response = self.client.post(reverse('home:verify_code'), {'email': 'member@example.com', 'code': first.code})
+        self.assertRedirects(response, reverse('home:set_new_password'))
+
+    def test_failed_delivery_does_not_use_up_the_request_allowance(self):
+        with mock.patch('home.views.send_mail', side_effect=OSError('connection refused')), \
+                self.assertLogs('home.views', level='ERROR'):
+            for _ in range(3):
+                self.request_code('member@example.com')
+        self.assertEqual(len(mail.outbox), 0)
+        # All three requests are still available once email works again.
+        for _ in range(4):
+            self.request_code('member@example.com')
+        self.assertEqual(len(mail.outbox), 3)
+        self.assertEqual(PasswordResetCode.objects.filter(email='member@example.com', used=False).count(), 1)
+
+
+class EmailSettingsTests(SimpleTestCase):
+    """merk/settings.py is evaluated in a fresh interpreter for each environment."""
+
+    def load_settings(self, **env):
+        clean = {k: v for k, v in os.environ.items() if not k.startswith(('EMAIL_', 'DEBUG', 'DEFAULT_FROM'))}
+        clean.update(SECRET_KEY='test-only', DJANGO_SETTINGS_MODULE='merk.settings', **env)
+        code = 'from django.conf import settings; print(settings.EMAIL_BACKEND, settings.EMAIL_USE_TLS, settings.EMAIL_USE_SSL)'
+        return subprocess.run(
+            [sys.executable, '-c', code], env=clean, cwd=Path(settings.BASE_DIR),
+            capture_output=True, text=True, timeout=60,
+        )
+
+    def test_production_defaults_to_smtp(self):
+        result = self.load_settings(DEBUG='False')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.split(), ['django.core.mail.backends.smtp.EmailBackend', 'True', 'False'])
+
+    def test_development_defaults_to_console(self):
+        result = self.load_settings(DEBUG='True')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.split()[0], 'django.core.mail.backends.console.EmailBackend')
+
+    def test_console_backend_is_refused_in_production(self):
+        result = self.load_settings(DEBUG='False', EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('ImproperlyConfigured', result.stderr)
+
+    def test_ssl_turns_off_tls_by_default(self):
+        result = self.load_settings(DEBUG='False', EMAIL_USE_SSL='True', EMAIL_PORT='2465')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.split()[1:], ['False', 'True'])

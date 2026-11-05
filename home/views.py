@@ -1,3 +1,4 @@
+import logging
 from functools import wraps
 
 from django.contrib import messages
@@ -17,6 +18,8 @@ from django.utils.crypto import get_random_string
 from .forms import *
 from .models import *
 from .models import PasswordResetCode
+
+logger = logging.getLogger(__name__)
 
 
 def staff_required(view):
@@ -189,8 +192,45 @@ REQUEST_WINDOW_SECONDS = 15 * 60
 MAX_VERIFY_ATTEMPTS = 5        # wrong codes per email before all its codes are cancelled
 
 
+RESET_CODE_SENT_MESSAGE = (
+    "If an account uses that email, we have sent it a 6-digit code. "
+    "If it does not arrive within a few minutes, check your spam folder or request a new code."
+)
+
+
 def _key(kind, email):
     return f'reset:{kind}:{email.lower()}'
+
+
+def _send_new_code(email, requests_made):
+    """Email a new code to `email`. Older codes are cancelled only once it has been sent."""
+    code = get_random_string(6, allowed_chars='0123456789')
+    expires_at = timezone.now() + timezone.timedelta(minutes=CODE_TTL_MINUTES)
+    record = PasswordResetCode.objects.create(email=email, code=code, expires_at=expires_at)
+    try:
+        send_mail(
+            subject='Your MERK one-time code',
+            message=(
+                f'Your one-time code is: {code}\n'
+                f'It expires in {CODE_TTL_MINUTES} minutes.\n\n'
+                "If you didn't ask to reset your MERK password, you can ignore this email."
+            ),
+            from_email=None,  # DEFAULT_FROM_EMAIL
+            recipient_list=[email],
+            fail_silently=False,
+        )
+    except Exception as exc:
+        # The code never reached the user: cancel it and leave their allowance and any
+        # earlier code as they were. Log only the error type: the message, recipient,
+        # code and SMTP credentials stay out of the logs.
+        record.used = True
+        record.save(update_fields=['used'])
+        logger.error('Password reset email could not be sent (%s).', type(exc).__name__)
+        return
+    # Only the newest code is valid.
+    PasswordResetCode.objects.filter(email__iexact=email, used=False).exclude(pk=record.pk).update(used=True)
+    cache.set(_key('requests', email), requests_made + 1, REQUEST_WINDOW_SECONDS)
+    cache.delete(_key('attempts', email))
 
 
 def request_login_code(request):
@@ -201,22 +241,10 @@ def request_login_code(request):
             requests_made = cache.get(_key('requests', email), 0)
             user_exists = User.objects.filter(email__iexact=email).exists()
             if user_exists and requests_made < MAX_CODE_REQUESTS:
-                cache.set(_key('requests', email), requests_made + 1, REQUEST_WINDOW_SECONDS)
-                cache.delete(_key('attempts', email))
-                # Only the newest code is valid.
-                PasswordResetCode.objects.filter(email__iexact=email, used=False).update(used=True)
-                code = get_random_string(6, allowed_chars='0123456789')
-                expires_at = timezone.now() + timezone.timedelta(minutes=CODE_TTL_MINUTES)
-                PasswordResetCode.objects.create(email=email, code=code, expires_at=expires_at)
-                send_mail(
-                    subject='Your MERK one-time code',
-                    message=f'Your one-time code is: {code}\nIt expires in {CODE_TTL_MINUTES} minutes.',
-                    from_email=None,
-                    recipient_list=[email],
-                    fail_silently=True,
-                )
-            # Same response whether or not the account exists or the limit was reached.
-            messages.success(request, 'If an account uses that email, we have sent it a 6-digit code.')
+                _send_new_code(email, requests_made)
+            # Same response whether or not the account exists, the limit was reached or
+            # sending failed, so the page never reveals which emails have accounts.
+            messages.success(request, RESET_CODE_SENT_MESSAGE)
             verify_form = VerifyLoginCodeForm(initial={'email': email})
             return render(request, 'verify_code.html', {
                 'form': verify_form,

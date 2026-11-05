@@ -47,8 +47,11 @@ docs/screenshots/  screenshots for this README
 | `ALLOWED_HOSTS` | Yes in production | Comma-separated host names, e.g. `merk.onrender.com`. Default `localhost`. |
 | `DATABASE_URL` | Yes in production | e.g. `postgres://user:password@host:5432/merk`. Defaults to `db.sqlite3` in the project folder. |
 | `CSRF_TRUSTED_ORIGINS` | Yes in production | Comma-separated origins, e.g. `https://merk.onrender.com`. |
-| `EMAIL_BACKEND` | No | Defaults to the console backend, which prints emails (and reset codes) to the terminal. Use `django.core.mail.backends.smtp.EmailBackend` to send real email. |
-| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL` | With SMTP | SMTP settings. |
+| `EMAIL_BACKEND` | No | Defaults to SMTP when `DEBUG` is off and to the console backend (prints emails, including reset codes, to the terminal) when `DEBUG=True`. The console backend is refused when `DEBUG` is off. |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Yes in production | SMTP server and login. See *Email (Resend)* below. |
+| `EMAIL_USE_TLS` / `EMAIL_USE_SSL` | No (default STARTTLS) | `EMAIL_USE_TLS=True` for ports 587/2587; `EMAIL_USE_SSL=True` for ports 465/2465. Use one, not both. |
+| `EMAIL_TIMEOUT` | No (default `10`) | Seconds to wait for the mail server. |
+| `DEFAULT_FROM_EMAIL` | Yes in production | Sender, e.g. `MERK <no-reply@mail.example.com>`. |
 | `SECURE_SSL_REDIRECT` | No (default `True` when `DEBUG` is off) | Redirects HTTP to HTTPS in production. |
 | `SECURE_HSTS_SECONDS` | No (default `0`) | Opt-in HSTS. Only enable it once the site is permanently on HTTPS. |
 
@@ -131,7 +134,23 @@ You don't need to set these:
 - `RENDER_EXTERNAL_HOSTNAME` is provided by Render and added to `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` automatically.
 - `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` only need setting for a custom domain (e.g. `merk.example.com` and `https://merk.example.com`).
 - `WEB_CONCURRENCY` sets the number of Gunicorn workers, which defaults to 1.
-- The SMTP variables above are only needed to email reset codes. Without them, codes are printed to Render's logs.
+
+### Email (Resend)
+
+Password-reset codes are sent through [Resend](https://resend.com)'s SMTP server. Add these to Render's environment:
+
+| Variable | Value |
+|---|---|
+| `EMAIL_HOST` | `smtp.resend.com` |
+| `EMAIL_PORT` | `2587` (Render's free plan blocks the standard SMTP ports) |
+| `EMAIL_USE_TLS` | `True` |
+| `EMAIL_HOST_USER` | `resend` |
+| `EMAIL_HOST_PASSWORD` | A Resend API key with *Sending access*. Keep it only in Render. |
+| `DEFAULT_FROM_EMAIL` | `MERK <no-reply@your-verified-domain>` |
+
+Until you verify a domain in Resend (*Domains → Add domain*, then add the DNS records it shows), you can only send from `onboarding@resend.dev`, and only to the email address of your Resend account. To email other users, verify a domain and change `DEFAULT_FROM_EMAIL` to an address on it.
+
+If sending fails, the user sees the usual "if an account uses that email…" message, the undelivered code is cancelled and doesn't count towards the 3-per-15-minutes limit, and Render's log shows `Password reset email could not be sent (<error type>)` without the code, recipient or credentials.
 
 Migrations run during the build (`build.sh`), because free Render services don't support pre-deploy commands. The first build creates all tables in the empty Neon database.
 

@@ -206,15 +206,39 @@ STORAGES = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Email: printed to the console by default. Set EMAIL_BACKEND and the SMTP
-# variables in the environment to send real email.
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+# Email. Local development (DEBUG=True) prints emails to the terminal by default.
+# Production sends over SMTP, configured entirely from the environment (see README).
+_CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    _CONSOLE_EMAIL_BACKEND if DEBUG else 'django.core.mail.backends.smtp.EmailBackend',
+)
+if not DEBUG and EMAIL_BACKEND == _CONSOLE_EMAIL_BACKEND:
+    # The console backend would write password-reset codes into the server logs.
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('The console email backend is for local development only (DEBUG=True).')
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+# STARTTLS (ports 587/2587) or implicit TLS (ports 465/2465); Django allows only one.
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False' if EMAIL_USE_SSL else 'True') == 'True'
+# Seconds to wait for the mail server before giving up, so a slow server can't hang a request.
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '10'))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@merk.local')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Send warnings and errors (e.g. failed password-reset emails) to stdout, where
+# Render's log viewer shows them.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'loggers': {
+        'home': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+    },
+}
 
 # Map Django's "error" message level to Bootstrap's "danger" alert style.
 from django.contrib.messages import constants as message_constants
